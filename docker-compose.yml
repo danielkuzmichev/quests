@@ -5,7 +5,7 @@ services:
             context: ./php
         restart: always
         volumes:
-            - ./app:/var/www/app
+            - ./app:/var/www/html/app
         container_name: "App"
     nginx:
         image: nginx:latest
