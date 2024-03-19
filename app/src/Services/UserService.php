@@ -23,7 +23,14 @@ class UserService
     public function createUser(Request $request): void
     {
         $user = new User();
-        $user->setName($request->request->get('name'));
+        $user->setName(
+            $request->request->get('name')
+        );
+        $this->userRepository->save($user, true);
+    }
+
+    public function updateUser(User $user): void
+    {
         $this->userRepository->save($user, true);
     }
 

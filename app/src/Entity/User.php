@@ -22,7 +22,7 @@ class User
     #[ORM\Column]
     private ?int $balance = 0;
 
-    #[ORM\ManyToMany(targetEntity: UserTask::class, mappedBy: 'userId')]
+    #[ORM\OneToMany(targetEntity: UserTask::class, mappedBy: 'user')]
     private Collection $userTasks;
 
     public function __construct()
@@ -68,30 +68,13 @@ class User
         ];
     }
 
-    /**
-     * @return Collection<int, UserTask>
-     */
-    public function getUserTasks(): Collection
+    public function addPoints(int $points): self
     {
-        return $this->userTasks;
-    }
-
-    public function addUserTask(UserTask $userTask): static
-    {
-        if (!$this->userTasks->contains($userTask)) {
-            $this->userTasks->add($userTask);
-            $userTask->addUserId($this);
-        }
+        $this->setBalance(
+            $this->getBalance() + $points
+        );
 
         return $this;
     }
 
-    public function removeUserTask(UserTask $userTask): static
-    {
-        if ($this->userTasks->removeElement($userTask)) {
-            $userTask->removeUserId($this);
-        }
-
-        return $this;
-    }
 }

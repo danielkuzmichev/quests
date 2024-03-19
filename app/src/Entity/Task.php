@@ -26,7 +26,7 @@ class Task
     #[ORM\Column]
     private int $cost = 0;
 
-    #[ORM\ManyToMany(targetEntity: UserTask::class, mappedBy: 'taskId')]
+    #[ORM\OneToMany(targetEntity: UserTask::class, mappedBy: 'task', cascade: ["remove"])]
     private Collection $userTasks;
 
     public function __construct()
@@ -75,30 +75,14 @@ class Task
         return $this;
     }
 
-    /**
-     * @return Collection<int, UserTask>
-     */
-    public function getUserTasks(): Collection
+    public function json_serialize(): array
     {
-        return $this->userTasks;
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'cost' => $this->cost,
+        ];
     }
 
-    public function addUserTask(UserTask $userTask): static
-    {
-        if (!$this->userTasks->contains($userTask)) {
-            $this->userTasks->add($userTask);
-            $userTask->addTaskId($this);
-        }
-
-        return $this;
-    }
-
-    public function removeUserTask(UserTask $userTask): static
-    {
-        if ($this->userTasks->removeElement($userTask)) {
-            $userTask->removeTaskId($this);
-        }
-
-        return $this;
-    }
 }

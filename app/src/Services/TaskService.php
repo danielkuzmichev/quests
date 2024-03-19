@@ -23,7 +23,15 @@ class TaskService
     public function createTask(Request $request): void
     {
         $task = new Task();
-        $task->setName($request->request->get('name'));
+        $task->setTitle(
+            $request->request->get('title')
+        );
+        $task->setDescription(
+            $request->request->get('description')
+        );
+        $task->setCost(
+            $request->request->get('cost')
+        );
         $this->taskRepository->save($task, true);
     }
 
@@ -39,6 +47,11 @@ class TaskService
             throw new EntityNotFoundException(sprintf('Task with id "%s" not found', $id));
         }
         return $task;
+    }
+
+    public function getTasksByIds(array $ids): array
+    {
+        return $this->taskRepository->getTasksByIds($ids);
     }
 
 }

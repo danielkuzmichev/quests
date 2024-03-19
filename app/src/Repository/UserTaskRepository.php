@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\UserTask;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Enum\UserTaskStatus;
 
 /**
  * @extends ServiceEntityRepository<UserTask>
@@ -21,28 +22,21 @@ class UserTaskRepository extends ServiceEntityRepository
         parent::__construct($registry, UserTask::class);
     }
 
-    //    /**
-    //     * @return UserTask[] Returns an array of UserTask objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('u.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function save(UserTask $entity, bool $flush = false): void
+    {
+        $this->getEntityManager()->persist($entity);
 
-    //    public function findOneBySomeField($value): ?UserTask
-    //    {
-    //        return $this->createQueryBuilder('u')
-    //            ->andWhere('u.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function getCompletedTasksByUserId($id): array
+    {
+        return $this->findBy([
+            'user' => $id,
+            'status' => UserTaskStatus::COMPLETED
+        ]);
+    }
+
 }

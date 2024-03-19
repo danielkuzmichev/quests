@@ -3,86 +3,57 @@
 namespace App\Entity;
 
 use App\Repository\UserTaskRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: UserTaskRepository::class)]
+#[ORM\Table(name: "usertasks")]
 class UserTask
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\GeneratedValue(strategy: "AUTO")]
+    #[ORM\Column(type: "integer")]
+    private $id;
 
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'userTasks')]
-    private Collection $userId;
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: "user_id", referencedColumnName: "id", onDelete: "CASCADE")]
+    private $user;
 
-    #[ORM\ManyToMany(targetEntity: Task::class, inversedBy: 'userTasks')]
-    private Collection $taskId;
+    #[ORM\ManyToOne(targetEntity: Task::class)]
+    #[ORM\JoinColumn(name: "task_id", referencedColumnName: "id", onDelete: "CASCADE")]
+    private $task;
 
-    #[ORM\Column(length: 255)]
-    private ?string $status = null;
+    #[ORM\Column(type: "string", length: 20)]
+    private $status;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $date_of_completion = null;
-
-    public function __construct()
-    {
-        $this->userId = new ArrayCollection();
-        $this->taskId = new ArrayCollection();
-    }
+    #[ORM\Column(type: "datetime", nullable: true)]
+    private $dateOfCompletion;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    /**
-     * @return Collection<int, User>
-     */
-    public function getUserId(): Collection
+    public function getUser(): ?User
     {
-        return $this->userId;
+        return $this->user;
     }
 
-    public function addUserId(User $userId): static
+    public function setUser(?User $user): self
     {
-        if (!$this->userId->contains($userId)) {
-            $this->userId->add($userId);
-        }
+        $this->user = $user;
 
         return $this;
     }
 
-    public function removeUserId(User $userId): static
+    public function getTask(): ?Task
     {
-        $this->userId->removeElement($userId);
-
-        return $this;
+        return $this->task;
     }
 
-    /**
-     * @return Collection<int, Task>
-     */
-    public function getTaskId(): Collection
+    public function setTask(?Task $task): self
     {
-        return $this->taskId;
-    }
-
-    public function addTaskId(Task $taskId): static
-    {
-        if (!$this->taskId->contains($taskId)) {
-            $this->taskId->add($taskId);
-        }
-
-        return $this;
-    }
-
-    public function removeTaskId(Task $taskId): static
-    {
-        $this->taskId->removeElement($taskId);
+        $this->task = $task;
 
         return $this;
     }
@@ -92,7 +63,7 @@ class UserTask
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(string $status): self
     {
         $this->status = $status;
 
@@ -101,12 +72,12 @@ class UserTask
 
     public function getDateOfCompletion(): ?\DateTimeInterface
     {
-        return $this->date_of_completion;
+        return $this->dateOfCompletion;
     }
 
-    public function setDateOfCompletion(?\DateTimeInterface $date_of_completion): static
+    public function setDateOfCompletion(?\DateTimeInterface $dateOfCompletion): self
     {
-        $this->date_of_completion = $date_of_completion;
+        $this->dateOfCompletion = $dateOfCompletion;
 
         return $this;
     }
