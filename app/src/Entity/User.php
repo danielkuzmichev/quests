@@ -25,9 +25,14 @@ class User
     #[ORM\OneToMany(targetEntity: UserTask::class, mappedBy: 'user')]
     private Collection $userTasks;
 
-    public function __construct()
-    {
-        $this->userTasks = new ArrayCollection();
+    public function __construct(
+        ?string $name = null,
+        ?int $balance = 0,
+        ?Collection $userTasks = null
+    ) {
+        $this->name = $name;
+        $this->balance = $balance;
+        $this->userTasks = $userTasks ?? new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -59,7 +64,7 @@ class User
         return $this;
     }
 
-    public function json_serialize(): array
+    public function serialize(): array
     {
         return [
             'id' => $this->id,

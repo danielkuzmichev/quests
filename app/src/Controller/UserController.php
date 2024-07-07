@@ -4,52 +4,144 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Entity\User;
 use App\Services\UserService;
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityNotFoundException;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use App\DTO\UserDTO;
+use OpenApi\Attributes as OA;
+use App\Entity\User;
+use Nelmio\ApiDocBundle\Annotation\Model;
 
+#[Route('/user')]
 class UserController extends AbstractController
 {
-
-    private UserService $userService;
-
-    public function __construct(UserService $userService)
+    public function __construct(private UserService $userService)
     {
-        $this->userService = $userService;
     }
 
-    #[Route('/user/{id}', name: 'app_user', methods: 'GET')]
+    #[OA\Get(
+        summary: "Get user by ID",
+        description: "Fetches details of a user by their ID.",
+        operationId: "selectUser",
+        tags: ["User"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "ID of the user to fetch",
+                schema: new OA\Schema(
+                    type: "integer"
+                )
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "User found and details returned",
+                content: new Model(type: User::class)
+            ),
+            new OA\Response(
+                response: 404,
+                description: "User not found",
+                content: new OA\JsonContent(
+                    type: "object",
+                    properties: [
+                        new OA\Property(
+                            property: "error",
+                            type: "string",
+                            example: "User is not found"
+                        ),
+                    ]
+                )
+            )
+        ]
+    )]
+    #[Route('/{id}', name: 'app_user', methods: 'GET')]
     public function selectUser(int $id): JsonResponse
     {
-
-        try {
-            $user = $this->userService->selectUser($id);
-            return new JsonResponse($user->json_serialize(), 200);
-        } catch (EntityNotFoundException $ex) {
-            return new JsonResponse(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }
+        $user = $this->userService->selectUser($id);
+        
+        return new JsonResponse($user->serialize(), 200);
     }
 
-    #[Route('/user', methods: 'POST')]
-    public function createUser(Request $request): JsonResponse
+    #[OA\Post(
+        summary: 'Create a new user',
+        description: 'Creates a new user.',
+        tags: ['User'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                ref: new Model(type: UserDTO::class)
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'OK',
+                content: new OA\JsonContent(type: 'string', example: 'OK')
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Validation Error',
+                content: new OA\JsonContent(type: 'string', example: 'Invalid data')
+            )
+        ]
+    )]
+    #[Route('/create', methods: 'POST')]
+    public function createUser(#[MapRequestPayload] UserDTO $userDTO): JsonResponse
     {
-        $this->userService->createUser($request);
+        $this->userService->createUser(
+            new User(...$userDTO->toArray())
+        );
 
         return new JsonResponse('OK');
     }
 
-    #[Route('/user/{id}', methods: 'DELETE')]
+    #[OA\Delete(
+        summary: "Delete a user by ID",
+        description: "Deletes a user from the system by their ID.",
+        tags: ["User"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "ID of the user to delete",
+                schema: new OA\Schema(
+                    type: "integer"
+                )
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "User successfully deleted",
+                content: new OA\JsonContent(
+                    type: "string",
+                    example: "OK"
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: "User not found",
+                content: new OA\JsonContent(
+                    type: "object",
+                    properties: [
+                        new OA\Property(
+                            property: "error",
+                            type: "string",
+                            example: "You cannot delete a non-existent user"
+                        ),
+                    ]
+                )
+            ),
+        ]
+    )]
+    #[Route('/{id}', methods: 'DELETE')]
     public function deleteUser(int $id): JsonResponse
     {
-        try {
-            $user = $this->userService->selectUser($id);
-            $this->userService->deleteUser($user);
-        } catch (EntityNotFoundException $ex) {
-            return new JsonResponse(['error' => 'You cannot delete a non-existing user'], Response::HTTP_NOT_FOUND);
-        }
+        $this->userService->deleteUser($id);
 
         return new JsonResponse('OK');
     }

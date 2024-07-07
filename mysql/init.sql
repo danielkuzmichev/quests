@@ -44,5 +44,5 @@ CREATE TABLE `usertasks` (
 
 INSERT INTO `usertasks` (`id`, `user_id`, `task_id`, `status`, `date_of_completion`) VALUES
 (1,	1,	1,	'completed',	'2024-03-19 15:19:37'),
-(1,	1,	2,	'not_completed',	NULL),
-(2,	2,	1,	'not_completed',	NULL);
+(2,	1,	2,	'not_completed',	NULL),
+(3,	2,	1,	'not_completed',	NULL);

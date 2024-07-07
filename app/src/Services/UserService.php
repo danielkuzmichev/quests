@@ -4,28 +4,16 @@ namespace App\Services;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityNotFoundException;
+use App\Exception\NotFoundUserException;
 
 class UserService
 {
-    private UserRepository $userRepository;
-
-    /**
-     * @param UserRepository $userRepository
-     */
-    public function __construct(UserRepository $userRepository)
+    public function __construct(private UserRepository $userRepository)
     {
-        $this->userRepository = $userRepository;
     }
 
-
-    public function createUser(Request $request): void
+    public function createUser(User $user): void
     {
-        $user = new User();
-        $user->setName(
-            $request->request->get('name')
-        );
         $this->userRepository->save($user, true);
     }
 
@@ -34,8 +22,13 @@ class UserService
         $this->userRepository->save($user, true);
     }
 
-    public function deleteUser(User $user): void
+    public function deleteUser(int $id): void
     {
+        try {
+            $user = $this->selectUser($id);
+        } catch (NotFoundUserException) {
+            throw new NotFoundUserException('You cannot delete a non-existent user');
+        }
         $this->userRepository->remove($user, true);
     }
 
@@ -43,7 +36,7 @@ class UserService
     {
         $user = $this->userRepository->select($id);
         if (!$user) {
-            throw new EntityNotFoundException(sprintf('User with id "%s" not found', $id));
+            throw new NotFoundUserException(sprintf("User with id '%s' not found", $id));
         }
         return $user;
     }

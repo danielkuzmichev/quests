@@ -4,39 +4,26 @@ namespace App\Services;
 
 use App\Entity\Task;
 use App\Repository\TaskRepository;
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityNotFoundException;
+use App\Exception\NotFoundTaskException;
 
 class TaskService
 {
-    private TaskRepository $taskRepository;
-
-    /**
-     * @param TaskRepository $taskRepository
-     */
-    public function __construct(TaskRepository $taskRepository)
+    public function __construct(private TaskRepository $taskRepository)
     {
-        $this->taskRepository = $taskRepository;
     }
 
-
-    public function createTask(Request $request): void
+    public function createTask(Task $task): void
     {
-        $task = new Task();
-        $task->setTitle(
-            $request->request->get('title')
-        );
-        $task->setDescription(
-            $request->request->get('description')
-        );
-        $task->setCost(
-            $request->request->get('cost')
-        );
         $this->taskRepository->save($task, true);
     }
 
-    public function deleteTask(Task $task): void
+    public function deleteTask(int $id): void
     {
+        try {
+            $task = $this->selectTask($id);
+        } catch (NotFoundTaskException) {
+            throw new NotFoundTaskException('You cannot delete a non-existent task');
+        }
         $this->taskRepository->remove($task, true);
     }
 
@@ -44,7 +31,7 @@ class TaskService
     {
         $task = $this->taskRepository->select($id);
         if (!$task) {
-            throw new EntityNotFoundException(sprintf('Task with id "%s" not found', $id));
+            throw new NotFoundTaskException(sprintf('Task with id "%s" not found', $id));
         }
         return $task;
     }

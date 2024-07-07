@@ -4,51 +4,126 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Services\TaskService;
-use App\Entity\User;
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityNotFoundException;
+use App\Entity\Task;
+use App\DTO\TaskDTO;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use OpenApi\Attributes as OA;
+use Nelmio\ApiDocBundle\Annotation\Model;
 
-
+#[Route('/task')]
 class TaskController extends AbstractController
 {
-    private TaskService $taskService;
-
-    public function __construct(TaskService $taskService)
+    public function __construct(private TaskService $taskService)
     {
-        $this->taskService = $taskService;
     }
 
-    #[Route('/task/{id}', name: 'app_task', methods: 'GET')]
-    public function selecttask(int $id): JsonResponse
+    #[OA\Get(
+        summary: 'Get task by ID',
+        description: 'Fetch a task by its ID.',
+        tags: ['Task'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'The ID of the task to fetch',
+                schema: new OA\Schema(type: 'integer', example: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Success',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'integer', example: 1),
+                        new OA\Property(property: 'title', type: 'string', example: 'Example Task Title'),
+                        new OA\Property(property: 'description', type: 'string', example: 'This is an example description of the task.'),
+                        new OA\Property(property: 'cost', type: 'integer', example: 100)
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Not Found',
+                content: new OA\JsonContent(type: 'string', example: 'Task not found')
+            )
+        ]
+    )]
+    #[Route('/{id}', name: 'app_task', methods: 'GET')]
+    public function selectTask(int $id): JsonResponse
     {
-        try {
-            $task = $this->taskService->selecttask($id);
-            return new JsonResponse($task->json_serialize(), 200);
-        } catch (EntityNotFoundException $ex) {
-            return new JsonResponse(['error' => 'Task not found'], Response::HTTP_NOT_FOUND);
-        }
+        $task = $this->taskService->selectTask($id);
+        
+        return new JsonResponse($task->serialize(), 200);
     }
 
-    #[Route('/task', methods: 'POST')]
-    public function createTask(Request $request): JsonResponse
+    #[OA\Post(
+        summary: 'Creates a new task',
+        description: 'Creates a new task',
+        tags: ['Task'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                ref: new Model(type: TaskDTO::class)
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'OK',
+                content: new OA\JsonContent(type: 'string', example: 'OK')
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Validation Error',
+                content: new OA\JsonContent(type: 'string', example: 'Invalid data')
+            )
+        ]
+    )]
+    #[Route('/create', methods: 'POST')]
+    public function createTask(#[MapRequestPayload] TaskDTO $taskDTO): JsonResponse
     {
-        $this->taskService->createTask($request);
+        $this->taskService->createTask(
+            new Task(...$taskDTO->toArray())
+        );
 
         return new JsonResponse('OK');
     }
 
-    #[Route('/task/{id}', methods: 'DELETE')]
+    #[OA\Delete(
+        summary: 'Delete task by ID',
+        description: 'Deletes a task by its ID.',
+        tags: ['Task'],
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                description: 'The ID of the task to delete',
+                schema: new OA\Schema(type: 'integer', example: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'OK',
+                content: new OA\JsonContent(type: 'string', example: 'OK')
+            ),
+            new OA\Response(
+                response: 404,
+                description: 'Not Found',
+                content: new OA\JsonContent(type: 'string', example: 'Task is not found')
+            )
+        ]
+    )]
+    #[Route('/{id}', methods: 'DELETE')]
     public function deleteTask(int $id): JsonResponse
     {
-        try {
-            $task = $this->taskService->selectTask($id);
-            $this->taskService->deleteTask($task);
-        } catch (EntityNotFoundException $ex) {
-            return new JsonResponse(['error' => 'You cannot delete a non-existing task'], Response::HTTP_NOT_FOUND);
-        }
+        $this->taskService->deleteTask($id);
 
         return new JsonResponse('OK');
     }

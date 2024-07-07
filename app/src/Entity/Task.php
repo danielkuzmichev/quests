@@ -29,9 +29,16 @@ class Task
     #[ORM\OneToMany(targetEntity: UserTask::class, mappedBy: 'task', cascade: ["remove"])]
     private Collection $userTasks;
 
-    public function __construct()
+    public function __construct(
+        ?string $title = null,
+        ?string $description = 0,
+        int $cost = 0,
+        ?Collection $userTasks = null)
     {
-        $this->userTasks = new ArrayCollection();
+        $this->title = $title;
+        $this->description = $description;
+        $this->cost = $cost;
+        $this->userTasks = $userTasks ?? new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -75,7 +82,7 @@ class Task
         return $this;
     }
 
-    public function json_serialize(): array
+    public function serialize(): array
     {
         return [
             'id' => $this->id,

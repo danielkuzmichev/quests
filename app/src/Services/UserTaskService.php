@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
-use App\Entity\User;
 use App\Repository\UserTaskRepository;
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityNotFoundException;
 use App\Enum\UserTaskStatus;
 use App\Services\UserService;
 use App\Services\TaskService;
 use App\Entity\UserTask;
+use App\Exception\NotFoundUserTaskException;
+use App\Exception\TaskAlreadyCompletedException;
 use Doctrine\ORM\EntityManagerInterface;
 
 class UserTaskService
@@ -37,16 +36,11 @@ class UserTaskService
         $this->entityManager = $entityManager;
     }
 
-    public function createUserTask(Request $request): void
+    public function createUserTask(int $userId, int $taskId): void
     {
-        $userId = $request->request->get('userId');
-        $taskId = $request->request->get('taskId');
         $user = $this->userService->selectUser($userId);
         $task = $this->taskService->selectTask($taskId);
-        $userTask = new UserTask();
-        $userTask->setUser($user);
-        $userTask->setTask($task);
-        $userTask->setStatus(UserTaskStatus::NOT_COMPLETED);
+        $userTask = new UserTask($user, $task);
         $this->userTaskRepository->save($userTask, true);
     }
 
@@ -56,12 +50,13 @@ class UserTaskService
             'user' => $userId,
             'task' => $taskId
         ]);
-
         if(!$userTask)  {
-            throw new EntityNotFoundException(sprintf('Task for user with "%s" id not found', $userId));
+            throw new NotFoundUserTaskException(sprintf("Task for user with id='%s' not found", $userId));
         }
         if ($userTask->getStatus() === UserTaskStatus::COMPLETED) {
-            throw new EntityNotFoundException(sprintf('This task has already been completed'));
+            throw new TaskAlreadyCompletedException(
+                data: [ 'date_of_completion' => $userTask->getDateOfCompletion()],
+            );
         }
         try {
             $em = $this->entityManager;
@@ -89,7 +84,7 @@ class UserTaskService
         if (!empty($userTasks)) {
             $tasks = array_map(
                 function ($userTask) {
-                    $item = $userTask->getTask()->json_serialize();
+                    $item = $userTask->getTask()->serialize();
                     $item['date_of_completion'] = $userTask->getDateOfCompletion();
                     return $item;
                 },

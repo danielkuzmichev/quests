@@ -2,8 +2,8 @@
 
 namespace App\Entity;
 
+use App\Enum\UserTaskStatus;
 use App\Repository\UserTaskRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: UserTaskRepository::class)]
@@ -28,6 +28,18 @@ class UserTask
 
     #[ORM\Column(type: "datetime", nullable: true)]
     private $dateOfCompletion;
+
+    public function __construct(
+        User $user,
+        Task $task,
+        string $status = UserTaskStatus::NOT_COMPLETED,
+        ?\DateTimeInterface $dateOfCompletion = null)
+    {
+        $this->user = $user;
+        $this->task = $task;
+        $this->status = $status;
+        $this->dateOfCompletion = $dateOfCompletion;
+    }
 
     public function getId(): ?int
     {
@@ -80,5 +92,14 @@ class UserTask
         $this->dateOfCompletion = $dateOfCompletion;
 
         return $this;
+    }
+
+    public function serialize(): array
+    {
+        return [
+            'user_id' => $this->user->serialize(),
+            'task_id' => $this->task->serialize(),
+            'date_of_completion' => $this->dateOfCompletion,
+        ];
     }
 }
